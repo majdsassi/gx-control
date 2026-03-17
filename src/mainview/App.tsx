@@ -1,63 +1,57 @@
-import { Electroview } from "electrobun/view";
 import { useEffect, useState } from "react";
-import type { DeviceInfo, DeviceRPCType } from "../shared/stb.types";
-
-const webviewRpc = Electroview.defineRPC<DeviceRPCType>({
-  handlers: {
-    requests: {},
-
-    messages: {
-      logToWebview: ({ msg }) => {
-        console.log("Message from bun:", msg);
-      },
-    },
-  },
-});
-
-const electroview = new Electroview({ rpc: webviewRpc });
+import type { DeviceInfo } from "../shared/stb.types";
+import { electroview } from "./rpc";
 
 function App() {
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
-  const [channels, setChannels] = useState<Array<{ ChannelName: string; ServiceId: number }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const loadDeviceInfo = async () => {
+    if (!electroview.rpc) {
+      setError("Electroview RPC is not ready.");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log("Requesting device info from Bun...");
+      const info = await electroview.rpc.request.getDeviceInfo({});
+      console.log("Received device info:", info);
+      if (!info) {
+        throw new Error("Device info is null or undefined");
+      }
+      setDeviceInfo(info);
+    } catch (fetchError) {
+      console.error("Error fetching device info:", fetchError);
+      setError(fetchError instanceof Error ? fetchError.message : "Failed to fetch device info");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
 
-    const loadDeviceInfo = async () => {
-      if (!electroview.rpc) {
-        if (!cancelled) {
-          setError("Electroview RPC is not ready.");
-          setLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const info = await electroview.rpc.request.getDeviceInfo({});
-        const channels = await electroview.rpc.request.getChannelsByRange({ start: 0, end: 20 });
-        if (!cancelled) {
-          setDeviceInfo(info);
-          console.log("Channels:", channels);
-        }
-      } catch (fetchError) {
-        if (!cancelled) {
-          setError(fetchError instanceof Error ? fetchError.message : "Failed to fetch device info");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+    const loadAsync = async () => {
+      if (!cancelled) {
+        await loadDeviceInfo();
       }
     };
 
-    void loadDeviceInfo();
+    void loadAsync();
 
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const handleRetry = () => {
+    void loadDeviceInfo();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-400 text-gray-900">
@@ -68,10 +62,18 @@ function App() {
         </p>
 
         <div className="rounded-2xl border border-white/30 bg-white/85 backdrop-blur p-6 shadow-2xl">
-          {loading && <p className="text-gray-700">Loading device info...</p>}
+          {loading && <p className="text-gray-700">Loading device info... This may take up to 30 seconds.</p>}
 
           {!loading && error && (
-            <p className="text-red-600 font-medium">Could not load device info: {error}</p>
+            <div>
+              <p className="text-red-600 font-medium mb-4">Could not load device info: {error}</p>
+              <button
+                onClick={handleRetry}
+                className="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                Retry
+              </button>
+            </div>
           )}
 
           {!loading && !error && deviceInfo && (
