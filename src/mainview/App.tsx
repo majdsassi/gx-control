@@ -18,6 +18,7 @@ const electroview = new Electroview({ rpc: webviewRpc });
 
 function App() {
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
+  const [channels, setChannels] = useState<Array<{ ChannelName: string; ServiceId: number }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,8 +36,10 @@ function App() {
 
       try {
         const info = await electroview.rpc.request.getDeviceInfo({});
+        const channels = await electroview.rpc.request.getChannelsByRange({ start: 0, end: 20 });
         if (!cancelled) {
           setDeviceInfo(info);
+          console.log("Channels:", channels);
         }
       } catch (fetchError) {
         if (!cancelled) {

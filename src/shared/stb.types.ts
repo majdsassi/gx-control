@@ -47,7 +47,14 @@ export type DeviceRPCType = {
         params: {
         };
         response: DeviceInfo;
-      };
+      } , 
+      getChannelsByRange: {
+        params: {
+          start: number;
+          end: number;
+        };
+        response: Array<Channel>;
+      }
     };
     messages: {
       logToBun: {

@@ -50,6 +50,10 @@ const appRPC = BrowserView.defineRPC<MyWebviewRPCType & DeviceRPCType>({
 
         return info[0];
       },
+      getChannelsByRange: async ({ start, end }) => {
+        const channels = await AliTv.requestChannelRange(start, end);
+        return channels;
+      }
     },
 
     messages: {
