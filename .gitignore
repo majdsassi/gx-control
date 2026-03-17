@@ -1,0 +1,24 @@
+# dependencies
+/node_modules
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+.env*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Bun-specific
+**/*.bun
+bun.lockb
+**/*.trace
+**/*.zip
+**/*.tar.gz
+**/*.tgz
+**/*.log
