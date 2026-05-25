@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Channel } from "../../shared/stb.types";
 import { electroview } from "../rpc";
+import { Link } from "react-router-dom";
 
 function Channels() {
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -57,8 +58,13 @@ function Channels() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-gray-900">Channels</h3>
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          to="/"
+          className="inline-flex items-center rounded-lg bg-gray-800 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-700"
+        >
+          Back to Home
+        </Link>
         <button
           className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
           onClick={() => {
@@ -68,6 +74,8 @@ function Channels() {
           Refresh
         </button>
       </div>
+
+      <h3 className="text-xl font-semibold text-gray-900">Channels</h3>
 
       <p className="text-sm text-gray-600">Showing {channels.length} channels.</p>
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ReactPlayer from 'react-player';
 import { electroview } from '../rpc';
+import { Link } from 'react-router-dom';
 
 const StreamingViewer = () => {
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -34,7 +35,15 @@ const StreamingViewer = () => {
   return (
     <section className='mx-auto w-full max-w-5xl rounded-2xl border border-white/20 bg-black/30 p-4 shadow-2xl backdrop-blur'>
       <header className='mb-3 flex items-center justify-between gap-3'>
-        <h2 className='text-lg font-semibold text-white'>Live Player</h2>
+        <div className='flex items-center gap-3'>
+          <Link
+            to='/'
+            className='inline-flex items-center rounded-lg bg-gray-800 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-700'
+          >
+            Back to Home
+          </Link>
+          <h2 className='text-lg font-semibold text-white'>Live Player</h2>
+        </div>
         <span className='rounded-full bg-white/10 px-3 py-1 text-xs text-blue-100'>{statusText}</span>
       </header>
 
