@@ -305,10 +305,12 @@ const AliTv = {
     return hd;
   },
 
-  startHttpStream: (channelId: string): Promise<void> => {
-    Ali.requestJson({ request: "1009", TvState: "0", ProgramId: channelId })
-      .then((json: string) => console.log(json));
-    return Promise.resolve();
+  startHttpStream: (channelId: string): Promise<{ success?: string; url?: string }[]> => {
+    return Ali.requestJson({ request: "1009", TvState: "0", ProgramId: channelId })
+      .then((json: string) => {
+        console.log(json);
+        return JSON.parse(json) as { success?: string; url?: string }[];
+      });
   }
 };
 

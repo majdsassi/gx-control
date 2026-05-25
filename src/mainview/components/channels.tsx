@@ -18,7 +18,7 @@ function Channels() {
     setError(null);
 
     try {
-      const response = await electroview.rpc.request.getChannelsByRange({ start: 0, end: 100 });
+      const response = await electroview.rpc.request.getChannelsByRange({ start: 0, end: 500 });
       setChannels(response);
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Failed to fetch channels");

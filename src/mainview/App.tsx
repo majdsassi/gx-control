@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { DeviceInfo } from "../shared/stb.types";
 import { electroview } from "./rpc";
+import { Link } from "react-router-dom";
 
 function App() {
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
@@ -54,9 +55,9 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-400 text-gray-900">
+    <div className="bg-white dark:bg-gray-900 text-black dark:text-white p-4 min-h-screen">
       <div className="container mx-auto px-4 py-10 max-w-3xl">
-        <h1 className="text-4xl font-bold mb-2 text-center text-white">GX Control Panel</h1>
+        <h1 className="text-4xl font-bold mb-2 text-center text-white">GX Control </h1>
         <p className="text-lg mb-8 text-center text-blue-100">
           Live receiver status from your connected STB.
         </p>
@@ -111,6 +112,20 @@ function App() {
               </div>
             </div>
           )}
+          <div>
+          <Link
+            to="/channels"
+            className="mt-6 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            View Channels
+          </Link>
+          <Link
+            to="/player"
+            className="mt-6 inline-block rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+          >
+            Watch Live
+          </Link>
+        </div>
         </div>
       </div>
     </div>

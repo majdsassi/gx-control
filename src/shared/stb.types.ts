@@ -39,6 +39,12 @@ export interface ButtonRequest {
   array: Array<{ KeyValue: string }>;
 }
 
+export interface PlaybackSource {
+  url: string;
+  mode: "direct" | "hls-transcoded";
+  message?: string;
+}
+
 
 export type DeviceRPCType = {
   bun: RPCSchema<{
@@ -54,6 +60,10 @@ export type DeviceRPCType = {
           end: number;
         };
         response: Array<Channel>;
+      };
+      getPlaybackSource: {
+        params: {};
+        response: PlaybackSource;
       }
     };
     messages: {
