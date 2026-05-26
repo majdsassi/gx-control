@@ -4,9 +4,85 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>React + Tailwind + Vite</title>
+    <base href="./">
+    <!--<script>
+      // Fallback overlay: if the app fails to load or errors, show a retry UI
+      
+      (function () {
+        const id = 'app-fallback-overlay';
+        const overlay = document.createElement('div');
+        overlay.id = id;
+        overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);color:#fff;z-index:99999;padding:20px;';
+        overlay.innerHTML = `
+          <div style="max-width:720px;text-align:center;">
+            <h2 style="margin:0 0 8px;font-size:20px">Application failed to load</h2>
+            <p style="margin:0 0 16px;opacity:0.9">If the UI is blank, you can try reloading the app. Check the app logs for errors.</p>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <button id="app-fallback-retry" style="background:#10b981;border:none;padding:8px 14px;border-radius:8px;color:#fff;font-weight:600;cursor:pointer">Reload</button>
+              <button id="app-fallback-open-devtools" style="background:#374151;border:none;padding:8px 14px;border-radius:8px;color:#fff;font-weight:600;cursor:pointer">Open DevTools</button>
+            </div>
+          </div>`;
+        overlay.hidden = true;
+        document.addEventListener('DOMContentLoaded', function () {
+          document.body.appendChild(overlay);
+          const showIfNotRendered = function () {
+            try {
+              const root = document.getElementById('root');
+                const mounted = window.__appMounted || (root && root.children.length > 0);
+                if (!mounted) overlay.hidden = false;
+                else overlay.hidden = true;
+                // If the app mounts later, listen for an explicit event or poll
+                const onAppMounted = () => {
+                  overlay.hidden = true;
+                  // remove overlay after short delay
+                  setTimeout(() => overlay.remove(), 400);
+                  window.removeEventListener('app-mounted', onAppMounted);
+                  clearInterval(checkInterval);
+                };
+                window.addEventListener('app-mounted', onAppMounted);
+                const checkInterval = setInterval(() => {
+                  try {
+                    if (window.__appMounted) onAppMounted();
+                  } catch (e) {}
+                }, 200);
+            } catch (e) {
+              overlay.hidden = false;
+            }
+          };
+          // Wait a short time for scripts to run
+          setTimeout(showIfNotRendered, 1500);
+        });
+
+        window.addEventListener('error', function () {
+          overlay.hidden = false;
+        });
+
+        document.addEventListener('click', function (e) {
+          const target = e.target;
+          if (!target) return;
+          if (target.id === 'app-fallback-retry') location.reload();
+          if (target.id === 'app-fallback-open-devtools' && window.electroview && typeof window.electroview.openDevTools === 'function') {
+            try { window.electroview.openDevTools(); } catch { /* ignore */ }
+          }
+        });
+      })();
+    </script>
+    <script>
+      // In dev mode, if the app fails to mount quickly, request the host to open WebView devtools
+      setTimeout(() => {
+        try {
+          const mounted = window.__appMounted || (document.getElementById('root')?.children.length ?? 0) > 0;
+          if (!mounted && window.electroview && typeof window.electroview.openDevTools === 'function') {
+            try { window.electroview.openDevTools(); } catch { /* ignore */ }
+          }
+        } catch (e) {
+          // ignore
+        }
+      }, 1200);
+    </script>-->
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/main.tsx"></script>
+    <script type="module" src="./main.tsx"></script>
   </body>
 </html>

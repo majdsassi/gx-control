@@ -7,6 +7,7 @@ function App() {
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
 
   const loadDeviceInfo = async () => {
     if (!electroview.rpc) {
@@ -53,6 +54,8 @@ function App() {
   const handleRetry = () => {
     void loadDeviceInfo();
   };
+
+  
 
   return (
     <div className="bg-white dark:bg-gray-900 text-black dark:text-white p-4 min-h-screen">
@@ -113,19 +116,21 @@ function App() {
             </div>
           )}
           <div>
-          <Link
-            to="/channels"
-            className="mt-6 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            View Channels
-          </Link>
-          <Link
-            to="/player"
-            className="mt-6 inline-block rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
-          >
-            Watch Live
-          </Link>
-        </div>
+            <div className="flex gap-3">
+              <Link
+                to="/channels"
+                className="mt-6 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                View Channels
+              </Link>
+              <Link
+                to="/player"
+                className="mt-6 inline-block rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+              >
+                Watch Live
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>

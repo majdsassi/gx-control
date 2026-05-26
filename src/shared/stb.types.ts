@@ -54,6 +54,29 @@ export type DeviceRPCType = {
         };
         response: DeviceInfo;
       } , 
+      discoverDevices: {
+        params: {
+          timeout?: number;
+        };
+        response: Array<{
+          ip: string;
+          location?: string;
+          server?: string;
+          usn?: string;
+          st?: string;
+        }>;
+      };
+      connectToDevice: {
+        params: {
+          ip: string;
+          port?: number;
+        };
+        response: {
+          success: boolean;
+          error?: string;
+          deviceInfo?: DeviceInfo;
+        };
+      };
       getChannelsByRange: {
         params: {
           start: number;

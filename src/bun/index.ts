@@ -6,6 +6,8 @@ import path from "node:path";
 import type { MyWebviewRPCType } from "../shared/types";
 import type { DeviceRPCType, DeviceInfo } from "../shared/stb.types";
 import { Ali, AliTv } from "./stb";
+import { discoverUPnPDevices } from "./ssdp";
+// SSDP device discovery is exposed via RPC for the React UI; no terminal prompts here.
 
 const DEV_SERVER_PORT = 5173;
 const DEV_SERVER_URL = `http://localhost:${DEV_SERVER_PORT}`;
@@ -205,19 +207,7 @@ async function startTranscode(sourceUrl: string): Promise<void> {
 
 async function initializeSTB() {
   try {
-    console.log("Initializing STB connection...");
-    await Ali.connect("192.168.1.152", 20000);
-    console.log("Connected to STB");
-    
-    const deviceInfo = await AliTv.requestDeviceInfo();
-    console.log("Device info fetched:", deviceInfo);
-    
-    if (deviceInfo && deviceInfo.length > 0) {
-      stbInfo = deviceInfo;
-      console.log(" STB initialized with device info:", stbInfo[0].ProductName);
-    } else {
-      console.warn("No device info returned, using default");
-    }
+    console.log("initializeSTB: no auto-connect. Waiting for user to select device in UI.");
   } catch (e) {
     console.error(" Failed to initialize STB:", e);
   }
@@ -237,16 +227,35 @@ async function getMainViewUrl(): Promise<string> {
 }
 
 async function main() {
-  // Initialize STB first
+  // Initialize STB (no auto-connect)
   await initializeSTB();
+
+  // Before opening the webview, run SSDP discovery so the user sees devices immediately.
+  let discovered: Array<any> = [];
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`SSDP discovery attempt ${attempt}/${maxAttempts}...`);
+      discovered = await discoverUPnPDevices({ timeout: 4, debug: true });
+      if (discovered && discovered.length > 0) {
+        console.log(`Found ${discovered.length} devices, opening webview.`);
+        break;
+      }
+    } catch (err) {
+      console.warn("SSDP discovery attempt failed:", err);
+    }
+
+    if (attempt < maxAttempts) {
+      // short delay before retry
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
+
+  if (!discovered || discovered.length === 0) {
+    console.warn("No SSDP devices found after discovery attempts. Opening webview so user can retry.");
+  }
+
   startHlsFileServer();
-  await AliTv.getChannels();
-  const currentChannel = await AliTv.getCurrentChannel();
-  console.log("Current channel:", currentChannel);
-  const streamInfo = await AliTv.startHttpStream(AliTv.getChannelByName(currentChannel).ServiceID);
-  currentStreamUrl = streamInfo[0]?.url ?? "";
-  console.log("Raw stream URL:", currentStreamUrl);
-  console.log("HLS transcode will start when you click Watch Live.");
 
   const appRPC = BrowserView.defineRPC<MyWebviewRPCType & DeviceRPCType>({
     maxRequestTime: 30000,
@@ -266,6 +275,47 @@ async function main() {
           const response = stbInfo[0];
           console.log("Returning device info:", response);
           return response;
+        },
+        discoverDevices: async ({ timeout = 4 }) => {
+          try {
+            console.log("discoverDevices called from webview, timeout:", timeout);
+            const devices = await discoverUPnPDevices({ timeout, debug: true });
+            return devices;
+          } catch (err) {
+            console.error("discoverDevices failed:", err);
+            return [];
+          }
+        },
+        connectToDevice: async ({ ip, port = 20000 }) => {
+          try {
+            console.log(`connectToDevice called: ${ip}:${port}`);
+            await Ali.connect(ip, port);
+            const deviceInfo = await AliTv.requestDeviceInfo();
+            if (deviceInfo && deviceInfo.length > 0) {
+              stbInfo = deviceInfo;
+            }
+            // Initialize channels and prepare stream info after successful connect
+            try {
+              // ensure HLS server is ready for future transcoding
+              startHlsFileServer();
+
+              await AliTv.getChannels();
+              const currentChannel = await AliTv.getCurrentChannel();
+              console.log("Current channel after connect:", currentChannel);
+              if (currentChannel) {
+                const streamInfo = await AliTv.startHttpStream(AliTv.getChannelByName(currentChannel).ServiceID);
+                currentStreamUrl = streamInfo[0]?.url ?? "";
+                console.log("Prepared raw stream URL after connect:", currentStreamUrl);
+              }
+            } catch (initErr) {
+              console.warn("Failed to initialize channels/stream after connect:", initErr);
+            }
+
+            return { success: true, deviceInfo: stbInfo[0] };
+          } catch (err) {
+            console.error("Failed to connect to device:", err);
+            return { success: false, error: String(err) };
+          }
         },
         getChannelsByRange: async ({ start, end }) => {
           console.log("getChannelsByRange called with:", { start, end });
