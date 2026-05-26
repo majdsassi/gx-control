@@ -37,7 +37,7 @@ const StreamingViewer = () => {
       <header className='mb-3 flex items-center justify-between gap-3'>
         <div className='flex items-center gap-3'>
           <Link
-            to='/'
+            to='/app'
             className='inline-flex items-center rounded-lg bg-gray-800 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-700'
           >
             Back to Home
