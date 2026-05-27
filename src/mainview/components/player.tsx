@@ -33,30 +33,42 @@ const StreamingViewer = () => {
   };
 
   return (
-    <section className='mx-auto w-full max-w-5xl rounded-2xl border border-white/20 bg-black/30 p-4 shadow-2xl backdrop-blur'>
-      <header className='mb-3 flex items-center justify-between gap-3'>
-        <div className='flex items-center gap-3'>
+    <section className='app-shell text-[var(--app-text)]'>
+      <div className='mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-10'>
+        <header className='mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
+          <div>
+            <p className='text-xs uppercase tracking-[0.36em] text-sky-200/70'>Live playback</p>
+            <h2 className='mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl'>Watch the live stream</h2>
+            <p className='mt-2 max-w-2xl text-sm text-[var(--app-text-soft)] sm:text-base'>Start transcoding, then play the HLS stream in a clean embedded viewer.</p>
+          </div>
+          <span className='rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1 text-xs font-semibold text-sky-100 backdrop-blur'>{statusText}</span>
+        </header>
+
+        <div className='glass-panel-strong relative overflow-hidden rounded-[2rem] p-4 shadow-2xl sm:p-5 lg:p-6'>
+          <div className='absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/60 to-transparent' />
+
+          <div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
+            <div className='flex items-center gap-3'>
           <Link
             to='/app'
-            className='inline-flex items-center rounded-lg bg-gray-800 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-700'
+            className='soft-button inline-flex items-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10'
           >
             Back to Home
           </Link>
-          <h2 className='text-lg font-semibold text-white'>Live Player</h2>
-        </div>
-        <span className='rounded-full bg-white/10 px-3 py-1 text-xs text-blue-100'>{statusText}</span>
-      </header>
+              <h2 className='text-lg font-semibold text-white'>Live Player</h2>
+            </div>
+          </div>
 
-      <div className='relative aspect-video min-h-[320px] w-full overflow-hidden rounded-xl bg-black'>
+      <div className='relative aspect-video min-h-[320px] w-full overflow-hidden rounded-[1.5rem] border border-white/10 bg-black shadow-[0_20px_70px_rgba(0,0,0,0.45)]'>
         {!hlsUrl ? (
-          <div className='absolute inset-0 flex items-center justify-center'>
+          <div className='absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.18),transparent_58%)]'>
             <button
               type='button'
               onClick={() => {
                 void handleWatchLive();
               }}
               disabled={starting}
-              className='rounded-xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60'
+              className='soft-button rounded-2xl bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-sky-500/20 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-60'
             >
               {starting ? 'Starting...' : 'Watch Live'}
             </button>
@@ -93,10 +105,12 @@ const StreamingViewer = () => {
       </div>
 
       {errorText && (
-        <p className='mt-3 rounded-lg border border-red-400/40 bg-red-900/30 px-3 py-2 text-sm text-red-200' role='alert'>
+        <p className='mt-4 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100' role='alert'>
           {errorText}
         </p>
       )}
+        </div>
+      </div>
     </section>
   );
 };

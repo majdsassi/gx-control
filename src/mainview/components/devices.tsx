@@ -130,22 +130,33 @@ export default function Devices() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-4">Select your device</h1>
-        <p className="mb-6 text-gray-300">Scanning your network for UPnP/SSDP devices...</p>
+    <div className="app-shell text-[var(--app-text)]">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.36em] text-sky-200/70">Device discovery</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Pick the receiver to connect</h1>
+            <p className="mt-2 max-w-2xl text-sm text-[var(--app-text-soft)] sm:text-base">The app scans your network and caches the last device you used.</p>
+          </div>
+          <div className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-2 text-sm font-semibold text-sky-100 backdrop-blur">
+            SSDP scan active
+          </div>
+        </div>
+
+        <div className="glass-panel-strong rounded-[2rem] p-5 sm:p-6 lg:p-8">
+          <p className="mb-6 text-sm text-[var(--app-text-soft)]">Scanning your network for UPnP/SSDP devices...</p>
 
         {recentDevice && (
-          <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-6 rounded-3xl border border-emerald-400/20 bg-emerald-400/10 p-4 shadow-lg shadow-emerald-950/20">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Recent device</p>
+                <p className="text-xs uppercase tracking-[0.24em] text-emerald-200/80">Recent device</p>
                 <p className="text-lg font-semibold text-white">{recentDevice.name}</p>
                 <p className="text-sm text-emerald-100/80">{recentDevice.ip}</p>
               </div>
               <button
                 onClick={() => void useRecentDevice()}
-                className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-400"
+                className="soft-button rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300"
               >
                 Use recent device
               </button>
@@ -153,14 +164,14 @@ export default function Devices() {
           </div>
         )}
 
-        {loading && <p>Discovering devices on the network...</p>}
-        {error && <p className="text-red-400">Error: {error}</p>}
+        {loading && <p className="text-[var(--app-text-soft)]">Discovering devices on the network...</p>}
+        {error && <p className="text-rose-200">Error: {error}</p>}
 
         {!loading && devices.length === 0 && (
-          <div className="p-4 bg-white/5 rounded">No devices found on the network.</div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-[var(--app-text-soft)]">No devices found on the network.</div>
         )}
 
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {devices.map((d, idx) => {
             const key = d.ip || d.location || d.usn || String(idx);
             const name = names[key] || d.server || d.ip;
@@ -168,26 +179,30 @@ export default function Devices() {
             return (
               <li
                 key={idx}
-                className={`bg-white/5 p-4 rounded flex items-center justify-between border ${
-                  isRecent ? "border-emerald-400/60" : "border-transparent"
+                className={`glass-panel rounded-3xl p-4 transition hover:-translate-y-0.5 hover:border-sky-300/30 ${
+                  isRecent ? "ring-1 ring-emerald-300/25" : "border-transparent"
                 }`}
               >
-                <div>
-                     <img src="https://symbols.getvecta.com/stencil_240/223_set-top-box.530df49e9e.svg" alt={name} className="w-16 h-16 object-contain" />
-                  <div className="flex items-center gap-2">
-                    <div className="font-semibold">{name}</div>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-sky-400/10 ring-1 ring-sky-300/15">
+                    <img src="https://symbols.getvecta.com/stencil_240/223_set-top-box.530df49e9e.svg" alt={name} className="h-10 w-10 object-contain opacity-90" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="font-semibold text-white">{name}</div>
                     {isRecent && (
-                      <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-200">
+                      <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-100 ring-1 ring-emerald-300/20">
                         Recent
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-400">{d.location ?? d.ip}</div>
+                    <div className="mt-1 text-xs text-[var(--app-text-soft)]">{d.location ?? d.ip}</div>
+                  </div>
                 </div>
-                <div>
+                <div className="mt-4 flex justify-end sm:mt-0">
                   <button
                     onClick={() => void handleConnect(d)}
-                    className="bg-green-600 px-3 py-1 rounded text-sm font-semibold"
+                    className="soft-button rounded-xl bg-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-sky-300"
                   >
                     Connect
                   </button>
@@ -196,6 +211,7 @@ export default function Devices() {
             );
           })}
         </ul>
+      </div>
       </div>
     </div>
   );

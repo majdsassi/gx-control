@@ -7,6 +7,7 @@ import type { MyWebviewRPCType } from "../shared/types";
 import type { DeviceRPCType, DeviceInfo } from "../shared/stb.types";
 import { Ali, AliTv } from "./stb";
 import { discoverUPnPDevices } from "./ssdp";
+import { resolveFfmpegPath } from "./pathFinder";
 // SSDP device discovery is exposed via RPC for the React UI; no terminal prompts here.
 
 const DEV_SERVER_PORT = 5173;
@@ -184,8 +185,9 @@ async function startTranscode(sourceUrl: string): Promise<void> {
     path.join(HLS_ROOT, "segment_%05d.ts"),
     HLS_PLAYLIST,
   ];
-
-  transcodeProcess = spawn("ffmpeg", args, {
+  const ffmpegPath = await resolveFfmpegPath();
+  console.log("Using ffmpeg binary at:", ffmpegPath);
+  transcodeProcess = spawn(ffmpegPath, args, {
     windowsHide: true,
     stdio: ["ignore", "ignore", "pipe"],
   });
@@ -228,6 +230,7 @@ async function getMainViewUrl(): Promise<string> {
 
 async function main() {
   // Initialize STB (no auto-connect)
+  
   await initializeSTB();
 
   // Before opening the webview, run SSDP discovery so the user sees devices immediately.
@@ -290,20 +293,23 @@ async function main() {
           try {
             console.log(`connectToDevice called: ${ip}:${port}`);
             await Ali.connect(ip, port);
+            AliTv.resetChannelCache();
             const deviceInfo = await AliTv.requestDeviceInfo();
             if (deviceInfo && deviceInfo.length > 0) {
               stbInfo = deviceInfo;
             }
+            const channelCount = stbInfo[0]?.ChannelNum ?? 0;
             // Initialize channels and prepare stream info after successful connect
             try {
               // ensure HLS server is ready for future transcoding
               startHlsFileServer();
 
-              await AliTv.getChannels();
-              const currentChannel = await AliTv.getCurrentChannel();
-              console.log("Current channel after connect:", currentChannel);
-              if (currentChannel) {
-                const streamInfo = await AliTv.startHttpStream(AliTv.getChannelByName(currentChannel).ServiceID);
+              await AliTv.requestCurrentChannel();
+              await AliTv.getChannelsPage(0, 100, true);
+              const currentChannelId = AliTv._currentChannelId;
+              console.log("Current channel id after connect:", currentChannelId);
+              if (currentChannelId) {
+                const streamInfo = await AliTv.startHttpStream(currentChannelId);
                 currentStreamUrl = streamInfo[0]?.url ?? "";
                 console.log("Prepared raw stream URL after connect:", currentStreamUrl);
               }
@@ -319,9 +325,18 @@ async function main() {
         },
         getChannelsByRange: async ({ start, end }) => {
           console.log("getChannelsByRange called with:", { start, end });
-          const channels = await AliTv.requestChannelRange(start, end);
+          const pageSize = Math.max(1, end - start + 1);
+          const channels = await AliTv.getChannelsPage(start, pageSize);
           console.log("Channels retrieved:", channels?.length || 0);
           return channels;
+        },
+        getChannelsPage: async ({ startIndex, pageSize = 1000 }) => {
+          console.log("getChannelsPage called with:", { startIndex, pageSize });
+          return AliTv.getChannelPageResponse(startIndex, pageSize);
+        },
+        getChannels: async () => {
+          console.log("getChannels called from webview");
+          return AliTv.getCachedChannels();
         },
         getPlaybackSource: async () => {
           try {

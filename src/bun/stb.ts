@@ -2,6 +2,8 @@ import net from 'net';
 import zlib from 'zlib';
 import type { ButtonRequest, Channel, DeviceInfo, TPModel } from './stb.types';
 
+const CHANNEL_PAGE_SIZE = 100;
+
 
 const appendBytes = (
   left: Uint8Array<ArrayBufferLike>,
@@ -164,6 +166,28 @@ const Ali = {
 
 const AliTv = {
   _channels: null as Channel[] | null,
+  _deviceInfo: null as DeviceInfo[] | null,
+  _channelCount: 0,
+  _currentChannelId: null as string | null,
+  _channelPages: new Map<string, Channel[]>(),
+  _channelPageRequests: new Map<string, Promise<Channel[]>>(),
+
+  _pageKey: (startIndex: number, pageSize: number): string => `${startIndex}:${pageSize}`,
+
+  _normalizePageStart: (startIndex: number, pageSize: number): number => {
+    if (pageSize <= 0) {
+      return 0;
+    }
+
+    return Math.max(0, Math.floor(startIndex / pageSize) * pageSize);
+  },
+
+  resetChannelCache: (): void => {
+    AliTv._channels = null;
+    AliTv._currentChannelId = null;
+    AliTv._channelPages.clear();
+    AliTv._channelPageRequests.clear();
+  },
 
   getTpByServiceId: (ServiceId: string): Promise<TPModel> => {
     const RequestTpModels = 24;
@@ -219,49 +243,119 @@ const AliTv = {
   },
 
   requestDeviceInfo: (): Promise<DeviceInfo[]> => 
-    Ali.requestJson({ request: "15" }).then((json: string) => JSON.parse(json) as DeviceInfo[]),
+    Ali.requestJson({ request: "15" }).then((json: string) => {
+      const deviceInfo = JSON.parse(json) as DeviceInfo[];
+      AliTv._deviceInfo = deviceInfo;
+      AliTv._channelCount = deviceInfo[0]?.ChannelNum ?? 0;
+      return deviceInfo;
+    }),
 
   requestChannelRange: (fromIndex: number, toIndex: number): Promise<Channel[]> => 
     Ali.requestJson({ request: "0", FromIndex: "" + fromIndex, ToIndex: "" + toIndex })
       .then((json: string) => JSON.parse(json)),
 
   requestCurrentChannel: (): Promise<any> => 
-    Ali.requestJson({ request: "3" }).then((json: string) => JSON.parse(json)),
+    Ali.requestJson({ request: "3" }).then((json: string) => {
+      const parsed = JSON.parse(json);
+      const currentChannelId = parsed?.[0]?.Data;
+      if (typeof currentChannelId === "string") {
+        AliTv._currentChannelId = currentChannelId;
+      }
+      return parsed;
+    }),
 
   requestButton: (id: number): Promise<any> => {
     const request: ButtonRequest = { request: "1040", array: [{ KeyValue: "" + id }] };
     return Ali.requestJson(request).then((json: string) => JSON.parse(json));
   },
 
-  getChannels: (): Promise<Channel[]> => {
-    AliTv._channels = [];
+  getChannelsPage: async (startIndex: number, pageSize = CHANNEL_PAGE_SIZE, forceRefresh = false): Promise<Channel[]> => {
+    const normalizedStart = AliTv._normalizePageStart(startIndex, pageSize);
+    const totalCount = AliTv._channelCount > 0 ? AliTv._channelCount : (await AliTv.requestDeviceInfo())[0]?.ChannelNum ?? 0;
+    const normalizedPageSize = Math.max(1, pageSize);
+    const normalizedEnd = Math.min(normalizedStart + normalizedPageSize - 1, totalCount > 0 ? totalCount - 1 : normalizedStart + normalizedPageSize - 1);
+    const cacheKey = AliTv._pageKey(normalizedStart, normalizedPageSize);
 
-    return AliTv.requestDeviceInfo()
-      .then(() => {
-        return AliTv.requestChannelRange(0, 99);
+    if (!forceRefresh && AliTv._channelPages.has(cacheKey)) {
+      return AliTv._channelPages.get(cacheKey) || [];
+    }
+
+    if (!forceRefresh) {
+      const pending = AliTv._channelPageRequests.get(cacheKey);
+      if (pending) {
+        return pending;
+      }
+    }
+
+    const request = AliTv.requestChannelRange(normalizedStart, normalizedEnd)
+      .then((channels: Channel[]) => {
+        AliTv._channelPages.set(cacheKey, channels);
+        if (normalizedStart === 0) {
+          AliTv._channels = channels;
+        }
+        return channels;
       })
-      .then((subChannels: Channel[]) => {
-        AliTv._channels = (AliTv._channels || []).concat(subChannels);
-        return AliTv.requestChannelRange(100, 199);
-      })
-      .then((subChannels: Channel[]) => {
-        AliTv._channels = (AliTv._channels || []).concat(subChannels);
-        return AliTv.requestChannelRange(200, 280);
-      })
-      .then((subChannels: Channel[]) => {
-        AliTv._channels = (AliTv._channels || []).concat(subChannels);
-        return AliTv._channels;
+      .finally(() => {
+        AliTv._channelPageRequests.delete(cacheKey);
       });
+
+    AliTv._channelPageRequests.set(cacheKey, request);
+    return request;
   },
 
-  getCurrentChannel: (): Promise<string> => {
-    return AliTv.requestCurrentChannel()
-      .then((json: any) => AliTv.getChannelById(json[0].Data).ServiceName);
+  getChannelPageResponse: async (startIndex: number, pageSize = CHANNEL_PAGE_SIZE, forceRefresh = false): Promise<{
+    channels: Channel[];
+    startIndex: number;
+    pageSize: number;
+    totalCount: number;
+    currentChannelId?: string;
+  }> => {
+    const channels = await AliTv.getChannelsPage(startIndex, pageSize, forceRefresh);
+    const normalizedStart = AliTv._normalizePageStart(startIndex, pageSize);
+    const normalizedPageSize = Math.max(1, pageSize);
+    const totalCount = AliTv._channelCount > 0 ? AliTv._channelCount : (await AliTv.requestDeviceInfo())[0]?.ChannelNum ?? 0;
+
+    return {
+      channels,
+      startIndex: normalizedStart,
+      pageSize: normalizedPageSize,
+      totalCount,
+      currentChannelId: AliTv._currentChannelId ?? undefined,
+    };
+  },
+
+  getAllCachedChannels: (): Channel[] => {
+    const cachedPages = [...AliTv._channelPages.entries()]
+      .sort(([left], [right]) => {
+        const leftStart = parseInt(left.split(":")[0], 10);
+        const rightStart = parseInt(right.split(":")[0], 10);
+        return leftStart - rightStart;
+      })
+      .flatMap(([, channels]) => channels);
+
+    if (cachedPages.length > 0) {
+      return cachedPages;
+    }
+
+    return AliTv._channels || [];
+  },
+
+  getChannels: async (): Promise<Channel[]> => {
+    return AliTv.getAllCachedChannels();
+  },
+
+  getCachedChannels: (): Channel[] => {
+    return AliTv.getAllCachedChannels();
+  },
+
+  getCurrentChannel: async (): Promise<string> => {
+    const json = await AliTv.requestCurrentChannel();
+    return AliTv.getChannelById(json[0].Data).ServiceName;
   },
 
   getChannelById: (id: string): Channel => {
-    if (!AliTv._channels) throw new Error("Channels not loaded");
-    for (const channel of AliTv._channels) {
+    const channels = AliTv.getAllCachedChannels();
+    for (const channel of channels) {
       if (channel.ServiceID === id) {
         return channel;
       }
@@ -270,8 +364,8 @@ const AliTv = {
   },
 
   getChannelByName: (name: string): Channel => {
-    if (!AliTv._channels) throw new Error("Channels not loaded");
-    for (const channel of AliTv._channels) {
+    const channels = AliTv.getAllCachedChannels();
+    for (const channel of channels) {
       if (channel.ServiceName === name) {
         return channel;
       }
@@ -281,9 +375,8 @@ const AliTv = {
 
   getFreeChannels: (): string[] => {
     const free: string[] = [];
-    const channels = AliTv._channels;
-    if (!channels) return free;
-    
+    const channels = AliTv.getAllCachedChannels();
+
     for (const channel of channels) {
       if (channel.Scramble === 0 && channel.Radio === 0) {
         free.push(channel.ServiceName);
@@ -294,9 +387,8 @@ const AliTv = {
 
   getHdChannels: (): string[] => {
     const hd: string[] = [];
-    const channels = AliTv._channels;
-    if (!channels) return hd;
-    
+    const channels = AliTv.getAllCachedChannels();
+
     for (const channel of channels) {
       if (channel.HD === 1) {
         hd.push(channel.ServiceName);
@@ -311,6 +403,7 @@ const AliTv = {
         console.log(json);
         return JSON.parse(json) as { success?: string; url?: string }[];
       });
+
   }
 };
 

@@ -45,6 +45,14 @@ export interface PlaybackSource {
   message?: string;
 }
 
+export interface ChannelPage {
+  channels: Channel[];
+  startIndex: number;
+  pageSize: number;
+  totalCount: number;
+  currentChannelId?: string;
+}
+
 
 export type DeviceRPCType = {
   bun: RPCSchema<{
@@ -82,6 +90,17 @@ export type DeviceRPCType = {
           start: number;
           end: number;
         };
+        response: Array<Channel>;
+      };
+      getChannelsPage: {
+        params: {
+          startIndex: number;
+          pageSize?: number;
+        };
+        response: ChannelPage;
+      };
+      getChannels: {
+        params: {};
         response: Array<Channel>;
       };
       getPlaybackSource: {
