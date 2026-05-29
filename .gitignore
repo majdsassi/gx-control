@@ -23,3 +23,10 @@ bun.lockb
 **/*.tgz
 **/*.log
 **/*.exe
+# Other files to ignore
+*.bak
+*.tmp
+*.swp
+*.swo
+*.log
+llms.txt
