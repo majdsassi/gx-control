@@ -376,6 +376,21 @@ async function main() {
       x: 200,
       y: 200,
     },
+    styleMask: {
+    // These are the current defaults
+    Borderless: true,
+    Titled: true,
+    Closable: true,
+    Miniaturizable: true,
+    Resizable: true,
+    UnifiedTitleAndToolbar: false,
+    FullScreen: false,
+    FullSizeContentView: false,
+    UtilityWindow: false,
+    DocModalWindow: false,
+    NonactivatingPanel: false,
+    HUDWindow: false,
+  },
     rpc: appRPC,
   });
 
