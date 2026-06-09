@@ -16,7 +16,7 @@ const HLS_PORT = 18085;
 const HLS_ROOT = path.join(os.tmpdir(), "gx-control-hls");
 const HLS_PLAYLIST = path.join(HLS_ROOT, "live.m3u8");
 
-let stbInfo: DeviceInfo[] = [{ ProductName: "STB Device", StbStatus: 0, SoftwareVersion: "Loading...", SerialNumber: "N/A", ChannelNum: 0, MaxNumOfPrograms: 0 }];
+let stbInfo: DeviceInfo[] = [{ ProductName: "STB Device", StbStatus: 0, SoftwareVersion: "Loading...", SerialNumber: "6/7", ChannelNum: 0, MaxNumOfPrograms: 0 }];
 let hlsServerStarted = false;
 let transcodeProcess: ReturnType<typeof spawn> | null = null;
 let currentStreamUrl = "";
@@ -348,7 +348,7 @@ async function main() {
             return {
               mode: "hls-transcoded" as const,
               url: `http://127.0.0.1:${HLS_PORT}/live.m3u8`,
-              message: "Transcoding stream for browser compatibility.",
+              message: "Transcoding stream for browser compatibility and cross server support.",
             };
           } catch (error) {
             console.error("Failed to start transcoder:", error);
